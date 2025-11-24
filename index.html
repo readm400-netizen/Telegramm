@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MaxCoin Elite</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg: #0f172a; --surface: #1e293b; --primary: #f59e0b; --accent: #22d3ee; --text: #f8fafc; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Hind Siliguri', sans-serif; padding-bottom: 90px; user-select: none; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
+
+        /* LOADING SCREEN */
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .loader { border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* LOGIN MODAL */
+        #login-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .login-box { width: 100%; max-width: 320px; background: var(--surface); padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #333; }
+        .login-inp { width: 100%; padding: 12px; background: var(--bg); border: 1px solid #555; color: white; margin: 15px 0; border-radius: 8px; text-align: center; }
+        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* HEADER */
+        .header { background: linear-gradient(135deg, #1e1b4b, #0f172a); padding: 20px; border-radius: 0 0 30px 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); text-align: center; }
+        .balance-txt { font-family: 'Poppins'; font-size: 45px; font-weight: 700; color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 10px; text-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        
+        /* LIVE TICKER */
+        .live-ticker { background: #020617; padding: 8px; margin-top: 15px; border-radius: 50px; border: 1px solid #333; font-size: 12px; color: #4ade80; display: flex; align-items: center; gap: 10px; }
+
+        /* GAMES GRID */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .card { background: var(--surface); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #333; transition: 0.2s; }
+        .card:active { transform: scale(0.95); border-color: var(--primary); }
+
+        /* NOTICES */
+        .notice-box { background: rgba(255,255,255,0.05); border-left: 4px solid var(--primary); padding: 10px; margin: 15px 20px; border-radius: 5px; font-size: 13px; color: #cbd5e1; }
+
+        /* REFER */
+        .ref-code-box { background: #000; border: 1px dashed var(--primary); padding: 15px; margin: 20px 0; border-radius: 10px; color: var(--primary); font-family: monospace; word-break: break-all; }
+
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+        .wheel-wrap { width: 250px; height: 250px; position: relative; margin: 20px auto; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 5px solid gold; background: conic-gradient(#ef4444 0deg 60deg, #eab308 60deg 120deg, #22c55e 120deg 180deg, #3b82f6 180deg 240deg, #a855f7 240deg 300deg, #ec4899 300deg 360deg); transition: transform 4s ease-out; }
+        .arrow { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid gold; z-index: 10; }
+        .scratch-container { position: relative; width: 250px; height: 150px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; }
+
+        /* TASKS & WD */
+        .task-list { padding: 0 20px; }
+        .task-item { background: var(--surface); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary); }
+        .task-btn { background: var(--primary); color: black; padding: 6px 15px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
+        .wd-box { padding: 20px; }
+        .pay-opt { flex: 1; background: var(--surface); border: 2px solid #333; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; opacity: 0.6; }
+        .pay-opt.selected { border-color: var(--primary); opacity: 1; background: rgba(245, 158, 11, 0.1); }
+        .pay-opt img { height: 40px; margin-bottom: 5px; }
+        .custom-input { width: 100%; background: var(--surface); border: 1px solid #333; padding: 15px; border-radius: 10px; color: white; margin-bottom: 15px; }
+
+        /* NAV */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 65px; background: #1e1b4b; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { text-align: center; color: #64748b; font-size: 22px; width: 25%; }
+        .nav-item.active { color: var(--primary); }
+        .page { display: none; animation: fadeIn 0.3s; } .page.active { display: block; } @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="loader"></div>
+        <p style="margin-top: 15px; color: #ccc;">Connecting...</p>
+    </div>
+
+    <div id="login-modal">
+        <div class="login-box">
+            <i class="fas fa-user-shield" style="font-size:50px; color:gold; margin-bottom:15px;"></i>
+            <h3>Login Required</h3>
+            <p style="font-size:12px; color:gray; margin-bottom:15px;">Could not verify Telegram ID automatically.</p>
+            <input type="text" id="login-id" class="login-inp" placeholder="Enter User ID (Number)">
+            <button class="btn-main" onclick="manualLogin()">Login</button>
+        </div>
+    </div>
+
+    <div id="home" class="page active">
+        <div class="header">
+            <div style="display:flex; justify-content:space-between; color:#aaa; font-size:12px; margin-bottom:10px;">
+                <span><i class="fas fa-user"></i> <span id="u-name">...</span></span>
+                <span style="color:#4ade80;">Online</span>
+            </div>
+            <div class="balance-txt"><i class="fas fa-coins"></i> <span id="bal-main">0</span></div>
+            <div class="live-ticker">
+                <i class="fas fa-bullhorn" style="color:gold;"></i>
+                <marquee id="live-pay-text">System Connected...</marquee>
+            </div>
+        </div>
+
+        <div class="notice-box"><i class="fas fa-bell"></i> <span id="home-notice-text">...</span></div>
+
+        <div style="padding:0 20px; margin-bottom:10px; color:#ccc; font-weight:bold;">Play & Earn</div>
+        <div class="grid">
+            <div class="card" onclick="playGame('spin')"><i class="fas fa-dharmachakra" style="font-size:35px; color:#eab308;"></i><br>Spin</div>
+            <div class="card" onclick="playGame('scratch')"><i class="fas fa-ticket-alt" style="font-size:35px; color:#22c55e;"></i><br>Scratch</div>
+            <div class="card" onclick="playGame('math')"><i class="fas fa-calculator" style="font-size:35px; color:#3b82f6;"></i><br>Math</div>
+            <div class="card" onclick="playGame('daily')"><i class="fas fa-gift" style="font-size:35px; color:#ec4899;"></i><br>Daily</div>
+        </div>
+    </div>
+
+    <div id="tasks" class="page">
+        <div style="padding:20px; text-align:center; font-weight:bold; color:gold;">Coin Missions</div>
+        <div id="task-list" class="task-list"></div>
+    </div>
+
+    <div id="wallet" class="page">
+        <div class="wd-box">
+            <div class="notice-box" style="border-color:red; color:#fca5a5;">⚠️ <span id="wd-notice-text">...</span></div>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <div class="pay-opt selected" onclick="selPay('bkash', this)"><img src="https://freelogopng.com/images/all_img/1656235623bkash-logo-png.png"><br>bKash</div>
+                <div class="pay-opt" onclick="selPay('nagad', this)"><img src="https://freelogopng.com/images/all_img/1679248787nagad-logo.png"><br>Nagad</div>
+            </div>
+            <input type="number" id="wd-num" class="custom-input" placeholder="Mobile Number">
+            <input type="number" id="wd-amt" class="custom-input" placeholder="Amount">
+            <button class="btn-main" onclick="withdraw()">WITHDRAW</button>
+        </div>
+    </div>
+
+    <div id="refer" class="page">
+        <div style="text-align:center; padding:30px;">
+            <i class="fas fa-users" style="font-size:50px; color:gold;"></i>
+            <h3>Refer & Earn</h3>
+            <div class="notice-box" style="text-align:left;">
+                <span id="ref-rules-text">...</span><br><br>
+                <b>Bonus: <span id="ref-bonus-show">0</span> Coins</b>
+            </div>
+            <p style="font-size:12px; color:gray;">Your Link:</p>
+            <div class="ref-code-box" id="ref-link">Generating...</div>
+            <button class="btn-main" onclick="copyRef()">COPY LINK</button>
+        </div>
+    </div>
+
+    <div id="modal-spin" class="modal">
+        <div class="wheel-wrap"><div class="arrow"></div><div class="wheel" id="wheel"></div></div>
+        <button class="btn-main" style="width:auto; padding:10px 40px; margin-top:30px;" onclick="doSpin()">SPIN</button>
+        <button onclick="closeModals()" style="margin-top:20px; background:none; border:1px solid #555; color:white; padding:5px 15px;">Close</button>
+    </div>
+    <div id="modal-scratch" class="modal"><div style="background:var(--surface); padding:20px; border-radius:15px; text-align:center;"><h3>Scratch Card</h3><div class="scratch-container"><div style="font-size:30px; font-weight:bold; color:black;"><span id="scratch-val">0</span></div><canvas id="scratch-canvas" width="250" height="150"></canvas></div><button onclick="closeModals()" style="margin-top:20px; background:none; border:1px solid #555; color:white; padding:5px 15px;">Close</button></div></div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="nav('home',this)"><i class="fas fa-home"></i></div>
+        <div class="nav-item" onclick="nav('tasks',this)"><i class="fas fa-tasks"></i></div>
+        <div class="nav-item" onclick="nav('wallet',this)"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item" onclick="nav('refer',this)"><i class="fas fa-share-alt"></i></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, update, onValue, get, child, set, push, increment } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1ccfsQq-7BGqvsA8lJBMtiBaBAM51sf4",
+            authDomain: "cx-incombidity.firebaseapp.com",
+            databaseURL: "https://cx-incombidity-default-rtdb.firebaseio.com",
+            projectId: "cx-incombidity",
+            storageBucket: "cx-incombidity.firebasestorage.app",
+            messagingSenderId: "688804165190",
+            appId: "1:688804165190:web:924d5eeefb2b59c17e7c47"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- 1. SMART AUTHENTICATION ---
+        let uid = null;
+        const tg = window.Telegram.WebApp;
+        tg.ready(); // Init Telegram
+
+        window.onload = () => {
+            // Check if opened inside Telegram
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                uid = tg.initDataUnsafe.user.id.toString();
+                let fname = tg.initDataUnsafe.user.first_name;
+                checkAndLogin(uid, fname);
+            } else {
+                // Check LocalStorage for Browser testing
+                let saved = localStorage.getItem('fix_uid');
+                if(saved) {
+                    uid = saved;
+                    checkAndLogin(uid, "User");
+                } else {
+                    // No ID found anywhere, show manual login
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('login-modal').style.display = 'flex';
+                }
+            }
+        }
+
+        window.manualLogin = () => {
+            const input = document.getElementById('login-id').value.trim();
+            if(input) {
+                uid = input;
+                localStorage.setItem('fix_uid', uid);
+                checkAndLogin(uid, "User");
+                document.getElementById('login-modal').style.display = 'none';
+            } else alert("Enter valid ID");
+        }
+
+        function checkAndLogin(userId, userName) {
+            get(ref(db, 'users/' + userId)).then((snap) => {
+                if (!snap.exists()) {
+                    // Auto Create Account
+                    set(ref(db, 'users/' + userId), {
+                        balance: 0,
+                        name: userName,
+                        joined: Date.now(),
+                        blocked: false
+                    });
+                } else if (snap.val().blocked) {
+                    alert("Your account is blocked!");
+                    return;
+                }
+                // Account verified, Load App
+                document.getElementById('loading').style.display = 'none';
+                initApp();
+            });
+        }
+
+        function initApp() {
+            document.getElementById('u-name').innerText = uid;
+            document.getElementById('ref-link').innerText = `https://t.me/cashlink6_bot?start=${uid}`;
+            
+            onValue(ref(db, 'users/'+uid), s => { if(s.val()) document.getElementById('bal-main').innerText = s.val().balance; });
+            
+            onValue(ref(db, 'settings'), s => {
+                const d = s.val() || {};
+                document.getElementById('home-notice-text').innerText = d.notice || "Welcome!";
+                document.getElementById('wd-notice-text').innerText = d.withdrawNote || "Warning";
+                document.getElementById('ref-rules-text').innerText = d.referNote || "Rules";
+                document.getElementById('ref-bonus-show').innerText = d.referBonus || "0";
+            });
+
+            onValue(ref(db, 'withdrawals'), s => {
+                let t=""; if(s.val()) Object.values(s.val()).slice(-10).forEach(w=>{ 
+                    if(w.status=='Paid') t+=`✅ ${w.number.slice(0,3)}*** got ${w.amount} | `; 
+                    else if(w.status=='Pending') t+=`⏳ ${w.number.slice(0,3)}*** req ${w.amount} | `;
+                });
+                document.getElementById('live-pay-text').innerText = t || "No updates";
+            });
+            loadTasks();
+        }
+
+        // 2. GAMES
+        window.closeModals = () => document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
+        window.playGame = (type) => {
+            const today = new Date().toDateString();
+            get(child(ref(db), `users/${uid}/lastPlayed/${type}`)).then(s => {
+                if(s.val() === today) alert("Today's limit over!");
+                else {
+                    if(type==='spin') document.getElementById('modal-spin').style.display='flex';
+                    else if(type==='scratch') { document.getElementById('modal-scratch').style.display='flex'; initScratch(); }
+                    else if(type==='math') { if(prompt("5+5=?")=='10') giveReward(50, 'math'); else alert("Wrong"); }
+                    else if(type==='daily') checkDaily();
+                }
+            });
+        }
+        window.doSpin = () => {
+            document.getElementById('wheel').style.transform = `rotate(${Math.floor(3000+Math.random()*3000)}deg)`;
+            setTimeout(() => { giveReward(100, 'spin'); closeModals(); }, 4000);
+        }
+        function initScratch() {
+            const c=document.getElementById('scratch-canvas'), ctx=c.getContext('2d');
+            let r=Math.floor(Math.random()*50)+10; document.getElementById('scratch-val').innerText=r;
+            ctx.fillStyle="#aaa"; ctx.fillRect(0,0,250,150); let s=0, d=false;
+            const scratch=(x,y)=>{ ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fill(); s++; if(s>100 && !d){ d=true; setTimeout(()=>{ giveReward(r, 'scratch'); closeModals(); },1000); } }
+            c.ontouchmove=(e)=>{e.preventDefault(); const r=c.getBoundingClientRect(); scratch(e.touches[0].clientX-r.left, e.touches[0].clientY-r.top);}
+            c.onmousemove=(e)=>{if(e.buttons===1){const r=c.getBoundingClientRect(); scratch(e.clientX-r.left, e.clientY-r.top);}}
+        }
+        function checkDaily() { get(ref(db, 'settings/dailyBonus')).then(s => giveReward(parseInt(s.val()||10), 'daily')); }
+        function giveReward(amt, type) {
+            alert(`Won ${amt} Coins!`);
+            update(ref(db, `users/${uid}`), { balance: increment(amt) });
+            set(ref(db, `users/${uid}/lastPlayed/${type}`), new Date().toDateString());
+            get(ref(db, 'settings/redirects/'+type)).then(l => { if(l.val()) window.location.href=l.val(); });
+        }
+
+        // 3. TASKS
+        function loadTasks() {
+            onValue(ref(db, 'tasks'), s => {
+                const d=s.val(); const l=document.getElementById('task-list'); l.innerHTML='';
+                get(child(ref(db), `users/${uid}/completedTasks`)).then(us => {
+                    const done=us.val()||{};
+                    if(d) Object.keys(d).forEach(k => {
+                        const isDone=done[k]===true;
+                        l.innerHTML+=`<div class="task-item"><div>${d[k].title}<br><small style="color:gold;">+${d[k].reward} Coins</small></div>${isDone?'<i class="fas fa-check-circle" style="color:green;"></i>':`<button class="task-btn" onclick="doTask('${k}','${d[k].link}',${d[k].reward})">Start</button>`}</div>`;
+                    });
+                });
+            });
+        }
+        window.doTask = (k,l,r) => { window.open(l,'_blank'); setTimeout(()=>{ if(confirm("Done?")) { update(ref(db, `users/${uid}`), {balance:increment(r)}); set(ref(db, `users/${uid}/completedTasks/${k}`), true); } },5000); }
+
+        // 4. WITHDRAW
+        let pm='bkash';
+        window.selPay=(m,e)=>{ pm=m; document.querySelectorAll('.pay-opt').forEach(x=>x.classList.remove('selected')); e.classList.add('selected'); }
+        window.withdraw=()=>{ const n=document.getElementById('wd-num').value, a=parseInt(document.getElementById('wd-amt').value); if(n&&a){ push(ref(db,'withdrawals'),{uid, number:n, amount:a, method:pm, status:'Pending'}); alert("Sent!"); } }
+        
+        // 5. COPY FIX
+        window.copyRef=()=>{ 
+            const t=document.getElementById('ref-link').innerText;
+            const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("Copy"); document.body.removeChild(ta);
+            alert("Copied!");
+        }
+        window.nav=(p,e)=>{ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); document.getElementById(p).classList.add('active'); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); e.classList.add('active'); }
+    </script>
+</body>
+</html>
